@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "@dietrichgebert/ponytail": {
+      "version": "5.3.3",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "graphify-pi": {
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "pi-fff": {
+      "version": "0.1.14",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "auto-model-router": {
+      "version": "0.38.0",
+      "enabledFeatures": null,
+      "enabled": true
+    }
+  },
+  "settings": {}
+}

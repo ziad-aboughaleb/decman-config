@@ -1,0 +1,41 @@
+TARGET_OS_NAME="Arch Linux"
+
+ESP_PATH="/boot"
+
+KERNEL_CMDLINE[default]="root=PARTUUID=5fdb35df-63cc-4427-8e00-ee399e45c25b zswap.enabled=0 rootflags=subvol=@ rw rootfstype=btrfs"
+
+BOOT_ORDER="*, *fallback, Snapshots"
+
+ENABLE_LIMINE_FALLBACK=no
+
+# Catppuccin Mocha theme & header settings
+LIMINE_HEADER=$(cat << 'EOF'
+timeout: 10
+default_entry: 2
+interface_branding: Limine Bootloader
+interface_branding_color: a6e3a1
+interface_help_color: a6e3a1
+interface_help_color_bright: a6e3a1
+hash_mismatch_panic: no
+
+term_background: 1e1e2e
+backdrop: 1e1e2e
+
+# Terminal colors (Catppuccin Mocha palette)
+term_palette: 45475a;f38ba8;a6e3a1;f9e2af;89b4fa;f5c2e7;94e2d5;bac2de
+term_palette_bright: 585b70;f38ba8;a6e3a1;f9e2af;89b4fa;f5c2e7;94e2d5;cdd6f4
+
+# Text colors
+term_foreground: cdd6f4
+term_foreground_bright: cdd6f4
+term_background_bright: 181825
+EOF
+)
+
+# Extra static boot entries (Windows)
+LIMINE_FOOTER=$(cat << 'EOF'
+/Windows
+    protocol: efi
+    path: boot():/EFI/Microsoft/Boot/bootmgfw.efi
+EOF
+)

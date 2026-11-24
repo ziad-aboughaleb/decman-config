@@ -1,2 +1,13 @@
-*/node_modules/*
+# Secrets
+**/.env
+*.secret
+*.key
+
+# Build & Dependencies
+**/node_modules/
 *.lock
+
+# Caches
+.ruff_cache/
+__pycache__/
+*.py[cod]

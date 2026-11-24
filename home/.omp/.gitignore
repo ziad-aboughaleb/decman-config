@@ -1,0 +1,20 @@
+# Secrets
+.env
+*.env
+
+# Runtime databases & ports
+*.db
+*.db-wal
+*.db-shm
+router/embed.port
+
+# OMP session data, auth & logs
+omp/sessions/
+omp/auth*
+omp/logs/
+
+# Downloaded plugin caches (restored from plugins/*.json)
+omp/plugins/node_modules/
+omp/plugins/cache/
+omp/plugins/bun.lock
+omp/agent/.env

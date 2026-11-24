@@ -1,0 +1,8 @@
+{
+  "name": "omp-plugins",
+  "private": true,
+  "dependencies": {
+    "auto-model-router": "npm:auto-model-router@0.38.0",
+    "pi-fff": "npm:pi-fff@0.1.14"
+  }
+}

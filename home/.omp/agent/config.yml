@@ -1,0 +1,26 @@
+modelRoles:
+  smol: auto-model-router/auto
+  slow: auto-model-router/auto
+  plan: auto-model-router/auto
+  default: auto-model-router/auto
+retry:
+  maxRetries: 2
+  baseDelayMs: 500
+  maxDelayMs: 3000
+composer:
+  shape: claude
+theme:
+  dark: titanium
+  light: light
+update:
+  auto: false
+setupVersion: 3
+statusLine:
+  preset: compact
+  separator: powerline-thin
+disabledMcpServers:
+  - agentdox
+extensions:
+  - /home/ziad/.omp/plugins/node_modules/.bun/auto-model-router@0.38.0+8e5822014ac0d853/node_modules/auto-model-router/omp-extension/router-embed.ts
+  - /home/ziad/.omp/plugins/node_modules/.bun/auto-model-router@0.38.0+8e5822014ac0d853/node_modules/auto-model-router/omp-extension/router-toast.ts
+  - /home/ziad/.omp/plugins/node_modules/.bun/auto-model-router@0.38.0+8e5822014ac0d853/node_modules/auto-model-router/omp-extension/router-configure.ts
