@@ -103,3 +103,93 @@
     )
   ) !important;
 }
+
+/* Chat code blocks: Material uses --attachment-color (on_primary) as the code
+   surface, while Discord's --text-code-* defaults still come from its dark
+   theme. Map them to the palette and blend the syntax hues toward the surface
+   text color so both light and dark palettes stay readable. */
+body {
+  --text-code: #fbf1c7 !important;
+  --text-code-variable: #fbf1c7 !important;
+  --text-code-operator: color-mix(in srgb, #ebdbb2 80%, #282828) !important;
+  --text-code-comment: color-mix(in srgb, #ebdbb2 80%, #282828) !important;
+  --text-code-keyword: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-section: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-link: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-bullet: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-title: color-mix(in srgb, #fabd2f 75%, #fbf1c7) !important;
+  --text-code-type: color-mix(
+    in srgb,
+    hsl(267deg, 83%, 75%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-string: color-mix(
+    in srgb,
+    hsl(105deg, 48%, 67%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-regexp: color-mix(
+    in srgb,
+    hsl(105deg, 48%, 67%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-addition: color-mix(
+    in srgb,
+    hsl(105deg, 48%, 67%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-number: color-mix(
+    in srgb,
+    hsl(40deg, 70%, 73%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-builtin: color-mix(
+    in srgb,
+    hsl(40deg, 70%, 73%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-decorator: color-mix(
+    in srgb,
+    hsl(40deg, 70%, 73%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-attribute: color-mix(
+    in srgb,
+    hsl(199deg, 66%, 64%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-property: color-mix(
+    in srgb,
+    hsl(199deg, 66%, 64%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-namespace: color-mix(
+    in srgb,
+    hsl(199deg, 66%, 64%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-tag: color-mix(
+    in srgb,
+    hsl(351deg, 74%, 68%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-error: color-mix(
+    in srgb,
+    hsl(351deg, 74%, 68%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-deletion: color-mix(
+    in srgb,
+    hsl(351deg, 74%, 68%) 36%,
+    #fbf1c7
+  ) !important;
+  --text-code-escape: color-mix(
+    in srgb,
+    hsl(267deg, 83%, 75%) 36%,
+    #fbf1c7
+  ) !important;
+}
+
+[class*="codeBlockLang"] {
+  color: color-mix(in srgb, hsl(105deg, 48%, 67%) 36%, #fbf1c7) !important;
+}
