@@ -277,9 +277,20 @@ def sync_live_edits() -> None:
     live_lines = live.read_text(errors="replace").splitlines(True)
     repo_lines = repo.read_text(errors="replace").splitlines(True)
     if live_lines != repo_lines:
-      diff = "".join(difflib.unified_diff(repo_lines, live_lines, fromfile=f"repo:{repo}", tofile=f"live:{live}"))
-      print(f"\n{c('[CONFIG]', 'bold', 'yellow')} Live edit detected in {c(live, 'bold')}:\n{diff}", end="")
-      if input("  Pull live changes into repo? [y/N] ").strip().lower() == "y":
+      print(f"\n{c('[CONFIG]', 'bold', 'yellow')} Live edit detected in {c(live, 'bold')}:")
+      for line in difflib.unified_diff(repo_lines, live_lines, fromfile=f"repo:{repo}", tofile=f"live:{live}", n=2):
+        text = line.rstrip("\n")
+        if line.startswith(("+++", "---")):
+          print(f"  {c(text, 'bold')}")
+        elif line.startswith("@@"):
+          print(f"  {c(text, 'cyan')}")
+        elif line.startswith("+"):
+          print(f"  {c(text, 'green')}")
+        elif line.startswith("-"):
+          print(f"  {c(text, 'red')}")
+        else:
+          print(f"  {c(text, 'dim')}")
+      if input(f"  {c('Pull live changes into repo? [y/N]', 'bold')} ").strip().lower() == "y":
         repo.write_text("".join(live_lines))
 
 
