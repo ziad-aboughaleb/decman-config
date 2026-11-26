@@ -1,5 +1,6 @@
 """Decman declarative system engine driven by ./modules/*.py."""
 
+import dataclasses
 import datetime
 import difflib
 import fnmatch
@@ -11,40 +12,46 @@ import runpy
 import shutil
 import subprocess
 import sys
-import types
 
 import decman
 
 globals().update(locals())
 
-# --- Config, User & Colors ----------------------------------------------------
+
+# --- Config & Constants -------------------------------------------------------
+
+
+def is_repo_dir(path: pathlib.Path) -> bool:
+  return (path / "modules").is_dir() and ((path / "files").is_dir() or (path / "home").is_dir())
+
 
 store = pathlib.Path("/var/lib/decman/store.json")
 saved = json.loads(store.read_text()).get("source_file") if store.exists() else None
 here = pathlib.Path(__file__).resolve().parent if "__file__" in globals() else None
 
-if here and (here / "modules").is_dir():
+if here and is_repo_dir(here):
   CONFIG_DIR = here
-elif saved and pathlib.Path(saved).exists():
-  CONFIG_DIR = pathlib.Path(saved).resolve().parent
+elif saved and (saved_dir := pathlib.Path(saved).resolve().parent) and is_repo_dir(saved_dir):
+  CONFIG_DIR = saved_dir
+elif is_repo_dir(cwd := pathlib.Path.cwd().resolve()):
+  CONFIG_DIR = cwd
 else:
-  CONFIG_DIR = pathlib.Path.cwd().resolve()
+  raise decman.SourceError("Could not locate decman-config repository directory.")
 
 MODULES_DIR = CONFIG_DIR / "modules"
 FILES_DIR = CONFIG_DIR / "files"
 HOME_DIR = CONFIG_DIR / "home"
 
-SYS_DIRS = ("/etc", "/usr/local")
-
 USER = os.environ.get("SUDO_USER") or "ziad"
 HOME = f"/home/{USER}"
+TRASH_DIR = pathlib.Path(HOME) / ".local/share/Trash"
+
+SYS_DIRS = ("/etc", "/usr/local")
+BINARY_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".ico", ".gif", ".bin", ".ttf", ".otf", ".woff2"}
+SKIP_WALK_DIRS = {".cache", ".git", ".cargo", ".rustup", ".npm", "Trash", "Steam", "umu", "node_modules"}
+MODE_PREFIX = re.compile(r"^([0-7]{3,4})\.(.+)$")
 
 COLORS = {"bold": "1", "dim": "2", "red": "31", "green": "32", "yellow": "33", "cyan": "36"}
-
-
-def c(text: object, *styles: str) -> str:
-  codes = [COLORS[s] for s in styles if s in COLORS] if sys.stdout.isatty() else []
-  return f"\033[{';'.join(codes)}m{text}\033[0m" if codes else str(text)
 
 
 # --- System Drift Exclusions --------------------------------------------------
@@ -110,11 +117,12 @@ IGNORE_RE = re.compile(
 )
 
 
-# --- Helpers ------------------------------------------------------------------
+# --- Helpers & Shared State ---------------------------------------------------
 
-BINARY_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".ico", ".gif", ".bin", ".ttf", ".otf", ".woff2"}
-MODE_PREFIX = re.compile(r"^([0-7]{3,4})\.(.+)$")
-SKIP_WALK_DIRS = {".cache", ".git", ".cargo", ".rustup", ".npm", "Trash", "Steam", "umu", "node_modules"}
+
+def c(text: object, *styles: str) -> str:
+  codes = [COLORS[s] for s in styles if s in COLORS] if sys.stdout.isatty() else []
+  return f"\033[{';'.join(codes)}m{text}\033[0m" if codes else str(text)
 
 
 def check_arg(*args: str) -> bool:
@@ -122,42 +130,51 @@ def check_arg(*args: str) -> bool:
   return bool(tokens.intersection(args))
 
 
-def is_interactive() -> bool:
-  return sys.stdin.isatty() and not check_arg("--dry-run", "--print")
-
-
 def cmd_lines(*args: str) -> list[str] | None:
   res = subprocess.run(args, capture_output=True, text=True, check=False)
   return res.stdout.splitlines() if res.returncode == 0 else None
 
 
+@dataclasses.dataclass
+class State:
+  upgrade: bool = dataclasses.field(default_factory=lambda: check_arg("upgrade"))
+  interactive: bool = dataclasses.field(default_factory=lambda: sys.stdin.isatty() and not check_arg("--dry-run", "--print"))
+  aur_ok: bool = dataclasses.field(default_factory=lambda: decman.aur is not None)
+  modules: list[str] = dataclasses.field(default_factory=list)
+  pkgs: set[str] = dataclasses.field(default_factory=set)
+  aur_pkgs: set[str] = dataclasses.field(default_factory=set)
+  units: set[str] = dataclasses.field(default_factory=set)
+  user_units: set[str] = dataclasses.field(default_factory=set)
+  change_hooks: list[str] = dataclasses.field(default_factory=list)
+  post_hooks: list[str] = dataclasses.field(default_factory=list)
+  pkg_drift: list[str] = dataclasses.field(default_factory=list)
+  sys_drift: list[str] = dataclasses.field(default_factory=list)
+
+
+STATE = State()
+
+
 # --- Module Loading & File Mapping --------------------------------------------
 
 
-def load_modules() -> types.SimpleNamespace:
+def load_modules() -> None:
   paths = [p for p in sorted(MODULES_DIR.glob("*.py")) if not p.name.startswith("_")]
   if not paths:
     raise decman.SourceError(f"No modules found in {MODULES_DIR}")
 
-  pkgs, aur_pkgs, units, user_units, change_hooks, post_hooks = set(), set(), set(), set(), [], []
+  STATE.modules = [p.stem for p in paths]
+  change_hooks, post_hooks = [], []
   for path in paths:
     mod = runpy.run_path(str(path), init_globals={"USER": USER, "HOME": HOME})
     for pkg in mod.get("PACKAGES", ()):
-      (aur_pkgs if pkg.startswith("aur:") else pkgs).add(pkg.removeprefix("aur:"))
-    units.update(mod.get("SYSTEMD_UNITS", ()))
-    user_units.update(mod.get("SYSTEMD_USER_UNITS", ()))
+      (STATE.aur_pkgs if pkg.startswith("aur:") else STATE.pkgs).add(pkg.removeprefix("aur:"))
+    STATE.units.update(mod.get("SYSTEMD_UNITS", ()))
+    STATE.user_units.update(mod.get("SYSTEMD_USER_UNITS", ()))
     change_hooks.extend(mod.get("CHANGE_HOOKS", ()))
     post_hooks.extend(mod.get("POST_HOOKS", ()))
 
-  return types.SimpleNamespace(
-    names=[p.stem for p in paths],
-    pkgs=pkgs,
-    aur_pkgs=aur_pkgs,
-    units=units,
-    user_units=user_units,
-    change_hooks=list(dict.fromkeys(change_hooks)),
-    post_hooks=list(dict.fromkeys(post_hooks)),
-  )
+  STATE.change_hooks = list(dict.fromkeys(change_hooks))
+  STATE.post_hooks = list(dict.fromkeys(post_hooks))
 
 
 def map_tree(root: pathlib.Path, prefix: str, owner: str, *, symlink: bool = False) -> None:
@@ -185,16 +202,12 @@ def map_tree(root: pathlib.Path, prefix: str, owner: str, *, symlink: bool = Fal
     )
 
 
-# --- Audits -------------------------------------------------------------------
+# --- Audits & Cleanup ---------------------------------------------------------
 
 
-def find_pkg_drift(declared: set[str]) -> list[str]:
-  explicit = cmd_lines("pacman", "-Qeq")
-  return sorted(set(explicit) - declared) if explicit is not None else []
-
-
-def find_broken_symlinks() -> list[str]:
-  broken: list[str] = []
+def clean_broken_symlinks() -> None:
+  if check_arg("--dry-run", "--print"):
+    return
   stack = [HOME]
   while stack:
     root = stack.pop()
@@ -205,19 +218,26 @@ def find_broken_symlinks() -> list[str]:
             if not os.path.exists(entry.path):
               target = pathlib.Path(os.path.abspath(os.path.join(root, os.readlink(entry.path))))
               if target.is_relative_to(CONFIG_DIR):
-                broken.append(entry.path)
+                os.unlink(entry.path)
           elif entry.is_dir(follow_symlinks=False) and entry.name not in SKIP_WALK_DIRS:
             stack.append(entry.path)
     except OSError:
       continue
-  return sorted(broken)
 
 
-def find_sys_drift(managed: set[str]) -> list[str]:
+def find_pkg_drift() -> None:
+  explicit = cmd_lines("pacman", "-Qeq")
+  declared = STATE.pkgs | STATE.aur_pkgs
+  STATE.pkg_drift = sorted(set(explicit) - declared) if explicit is not None else []
+
+
+def find_sys_drift() -> None:
   ql, qii = cmd_lines("pacman", "-Qlq"), cmd_lines("pacman", "-Qii")
   if ql is None or qii is None:
-    return []
+    STATE.sys_drift = []
+    return
 
+  managed = set(decman.files) | set(decman.symlinks)
   prefixes = tuple(f"{d.rstrip('/')}/" for d in SYS_DIRS)
   owned = {p for p in ql if p.startswith(prefixes) and not p.endswith("/")}
   modified = {line.removesuffix("[modified]").strip() for raw in qii if (line := raw.strip()).startswith(prefixes) and line.endswith("[modified]")}
@@ -230,7 +250,7 @@ def find_sys_drift(managed: set[str]) -> list[str]:
         path = f"{root}/{f}"
         if not IGNORE_RE.match(path) and path not in managed and (path not in owned or path in modified):
           drift.append(path)
-  return drift
+  STATE.sys_drift = drift
 
 
 # --- Output, Hooks & Prompts --------------------------------------------------
@@ -243,31 +263,30 @@ def run_hooks(hooks: list[str], label: str) -> None:
       print(f"  {c('[WARN]', 'bold', 'red')} {label} hook exited {rc}: {cmd}")
 
 
-def print_summary(
-  state: types.SimpleNamespace,
-  upgrade: bool,
-  aur_ok: bool,
-  pkg_drift: list[str],
-  broken_links: list[str],
-  sys_drift: list[str],
-) -> None:
-  ok = c("clean", "green")
-  print(f"""\
-{c("[CONFIG]", "bold", "cyan")} {c("Summary:", "bold")}
-  modules  : {", ".join(state.names)}
-  packages : {len(state.pkgs)} native, {len(state.aur_pkgs)} aur (upgrade: {c("on", "bold", "green") if upgrade else c("off", "dim")})
-  units    : {len(state.units)} system, {len(state.user_units)} user
-  files    : {len(decman.files)} managed, {len(decman.symlinks)} symlinks
-  hooks    : {len(state.change_hooks)} on-change, {len(state.post_hooks)} post-update
-  pkgdrift : {c(f"{len(pkg_drift)} unmanaged ({', '.join(pkg_drift)})", "yellow") if pkg_drift else ok}
-  symlinks : {c(f"{len(broken_links)} broken", "yellow") if broken_links else ok}
-  drift    : {c(f"{len(sys_drift)} unmanaged", "yellow") if sys_drift else ok}""")
-  if not aur_ok:
-    print(f"  {c('[WARN]', 'bold', 'yellow')} AUR plugin unavailable (install devtools and re-run).")
+def print_summary() -> None:
+  def row(label: str, *parts: str) -> list[str]:
+    items = [p for p in parts if p]
+    return [f"  {label:<8} : {', '.join(items)}"] if items else []
+
+  upgrade = c("on", "bold", "green") if STATE.upgrade else c("off", "dim")
+  lines = [
+    f"{c('[CONFIG]', 'bold', 'cyan')} {c('Summary:', 'bold')}",
+    *row("modules", ", ".join(STATE.modules)),
+    *row("packages", f"{len(STATE.pkgs)} native" if STATE.pkgs else "", f"{len(STATE.aur_pkgs)} aur" if STATE.aur_pkgs else "", f"upgrade: {upgrade}"),
+    *row("units", f"{len(STATE.units)} system" if STATE.units else "", f"{len(STATE.user_units)} user" if STATE.user_units else ""),
+    *row("files", f"{len(decman.files)} managed" if decman.files else "", f"{len(decman.symlinks)} symlinks" if decman.symlinks else ""),
+    *row("hooks", f"{len(STATE.change_hooks)} on-change" if STATE.change_hooks else "", f"{len(STATE.post_hooks)} post-update" if STATE.post_hooks else ""),
+    *row("pkgdrift", c(f"{len(STATE.pkg_drift)} unmanaged ({', '.join(STATE.pkg_drift)})", "yellow") if STATE.pkg_drift else ""),
+    *row("sysdrift", c(f"{len(STATE.sys_drift)} unmanaged", "yellow") if STATE.sys_drift else ""),
+  ]
+  if not STATE.aur_ok and STATE.aur_pkgs:
+    lines.append(f"  {c('[WARN]', 'bold', 'yellow')} AUR plugin unavailable (install devtools and re-run).")
+
+  print("\n".join(lines))
 
 
 def sync_live_edits() -> None:
-  if not is_interactive():
+  if not STATE.interactive:
     return
   for dst, entry in sorted(decman.files.items()):
     live = pathlib.Path(dst)
@@ -294,75 +313,86 @@ def sync_live_edits() -> None:
         repo.write_text("".join(live_lines))
 
 
-def prompt_unlink(paths: list[str], prompt: str, *, backup: bool = False) -> None:
-  if not paths:
+def move_to_trash(src: pathlib.Path, stamp: str) -> None:
+  files_dir = TRASH_DIR / "files"
+  info_dir = TRASH_DIR / "info"
+  files_dir.mkdir(parents=True, exist_ok=True)
+  info_dir.mkdir(parents=True, exist_ok=True)
+
+  name = src.name
+  dest = files_dir / name
+  idx = 1
+  while dest.exists() or dest.is_symlink() or (info_dir / f"{name}.trashinfo").exists():
+    name = f"{src.stem}.{idx}{src.suffix}"
+    dest = files_dir / name
+    idx += 1
+
+  (info_dir / f"{name}.trashinfo").write_text(f"[Trash Info]\nPath={src}\nDeletionDate={stamp}\n")
+  shutil.move(str(src), str(dest))
+  shutil.chown(info_dir / f"{name}.trashinfo", user=USER, group=USER)
+  shutil.chown(dest, user=USER, group=USER)
+
+
+def prompt_trash_drift() -> None:
+  if not STATE.sys_drift:
     return
-  for path in paths:
+  for path in STATE.sys_drift:
     print(f"    {c('-', 'yellow')} {path}")
-  if is_interactive() and input(f"  {prompt} [y/N] ").strip().lower() == "y":
-    trash_dir = None
-    if backup:
-      stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-      trash_dir = pathlib.Path(f"/tmp/decman-trash/{stamp}")
+  if not STATE.interactive or input("  Move unmanaged system paths to Trash? [y/N] ").strip().lower() != "y":
+    return
 
-    for path in paths:
-      try:
-        if trash_dir:
-          dest = trash_dir / path.lstrip("/")
-          dest.parent.mkdir(parents=True, exist_ok=True)
-          shutil.move(path, dest)
-        else:
-          os.unlink(path)
-      except OSError as err:
-        print(f"  {c('[WARN]', 'bold', 'red')} Failed to remove {path}: {err}")
+  stamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+  moved = 0
+  for path in STATE.sys_drift:
+    try:
+      move_to_trash(pathlib.Path(path), stamp)
+      moved += 1
+    except OSError as err:
+      print(f"  {c('[WARN]', 'bold', 'red')} Failed to trash {path}: {err}")
 
-    if trash_dir and trash_dir.exists():
-      print(f"  {c('[INFO]', 'cyan')} Moved removed files to {trash_dir}")
+  if moved:
+    print(f"  {c('[CONFIG]', 'cyan')} Moved {moved} path(s) to {TRASH_DIR}")
 
 
 # --- Entrypoint ---------------------------------------------------------------
 
 
 def main() -> None:
-  if decman.pacman is None:
+  if (pacman := decman.pacman) is None:
     raise decman.SourceError("pacman plugin unavailable.")
 
-  state = load_modules()
+  load_modules()
 
-  upgrade = check_arg("upgrade")
-  if not upgrade:
-    decman.pacman.commands.upgrade = lambda: ["true"]
-  decman.pacman.packages |= state.pkgs
+  if not STATE.upgrade:
+    pacman.commands.upgrade = lambda: ["true"]
+  pacman.packages |= STATE.pkgs
 
-  aur_ok = (aur := decman.aur) is not None
-  if aur is not None:
+  if (aur := decman.aur) is not None:
     aur.makepkg_user = USER
-    aur.packages |= state.aur_pkgs
+    aur.packages |= STATE.aur_pkgs
   else:
     decman.execution_order = [s for s in decman.execution_order if s != "aur"]
 
   if (systemd := decman.systemd) is not None:
-    systemd.enabled_units |= state.units
-    if state.user_units:
-      systemd.enabled_user_units.setdefault(USER, set()).update(state.user_units)
+    systemd.enabled_units |= STATE.units
+    if STATE.user_units:
+      systemd.enabled_user_units.setdefault(USER, set()).update(STATE.user_units)
 
-  if state.change_hooks:
-    decman.on_change(lambda *_: run_hooks(state.change_hooks, "on-change"))  # type: ignore[attr-defined]
-
-  if state.post_hooks:
-    decman.after_update(lambda *_: run_hooks(state.post_hooks, "post-update"))  # type: ignore[attr-defined]
+  if STATE.change_hooks:
+    decman.on_change(lambda *_: run_hooks(STATE.change_hooks, "on-change"))  # type: ignore[attr-defined]
+  if STATE.post_hooks:
+    decman.after_update(lambda *_: run_hooks(STATE.post_hooks, "post-update"))  # type: ignore[attr-defined]
 
   map_tree(FILES_DIR, "", "root")
   map_tree(HOME_DIR, HOME, USER, symlink=True)
 
-  pkg_drift = find_pkg_drift(state.pkgs | state.aur_pkgs)
-  broken_links = find_broken_symlinks()
-  sys_drift = find_sys_drift(set(decman.files) | set(decman.symlinks))
+  clean_broken_symlinks()
+  find_pkg_drift()
+  find_sys_drift()
 
-  print_summary(state, upgrade, aur_ok, pkg_drift, broken_links, sys_drift)
+  print_summary()
   sync_live_edits()
-  prompt_unlink(broken_links, "Remove broken symlinks?")
-  prompt_unlink(sys_drift, "Delete unmanaged system paths?", backup=True)
+  prompt_trash_drift()
 
 
 globals().update(locals())
