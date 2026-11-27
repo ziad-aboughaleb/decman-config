@@ -174,8 +174,8 @@ show_cursor = true
 show_shortcuts = false
 
 [theme]
-builtin = "Gruvbox"
-community_palette = "ADW"
+builtin = "Ayu"
+community_palette = "Monochrome"
 mode = "dark"
 source = "builtin"
 wallpaper_scheme = "m3-content"
@@ -198,13 +198,13 @@ edge_smoothness = 0.0
 transition_on_startup = true
 
 [wallpaper.default]
-path = "/home/ziad/Pictures/wallpapers/wallhaven-d8vvlo_2560x1600.png"
+path = "/home/ziad/Pictures/wallpapers/wallhaven-xew6xd_2560x1600.png"
 
 [wallpaper.last]
-path = "/home/ziad/Pictures/wallpapers/wallhaven-d8vvlo_2560x1600.png"
+path = "/home/ziad/Pictures/wallpapers/wallhaven-xew6xd_2560x1600.png"
 
 [wallpaper.monitors.eDP-1]
-path = "/home/ziad/Pictures/wallpapers/wallhaven-d8vvlo_2560x1600.png"
+path = "/home/ziad/Pictures/wallpapers/wallhaven-xew6xd_2560x1600.png"
 
 [[wallpaper.favorite]]
 palette_source = "wallpaper"
