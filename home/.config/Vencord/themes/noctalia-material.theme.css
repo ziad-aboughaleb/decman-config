@@ -34,24 +34,24 @@
 .theme-light {
   /* See options at https://github.com/CapnKitten/Material-Discord */
   /* Accent */
-  --accent-hue: 40;
-  --accent-saturation: 75%;
-  --accent-lightness: 60%;
-  --accent-text-color: #0b0e14;
+  --accent-hue: 61;
+  --accent-saturation: 66%;
+  --accent-lightness: 44%;
+  --accent-text-color: #282828;
 
   /* App */
-  --app-bg: #0b0e14;
-  --main-color: #0b0e14;
-  --main-alt: #0b0e14;
-  --server-color: #0b0e14;
-  --status-picker-color: #1e222a;
-  --sidebar-panel-color: #1e222a;
-  --chat-color: #0b0e14;
-  --tooltip-color: #0b0e14;
-  --tooltip-text-color: #d1d1c7;
+  --app-bg: #282828;
+  --main-color: #282828;
+  --main-alt: #282828;
+  --server-color: #282828;
+  --status-picker-color: #3c3836;
+  --sidebar-panel-color: #3c3836;
+  --chat-color: #282828;
+  --tooltip-color: #282828;
+  --tooltip-text-color: #fbf1c7;
 
   /* Message */
-  --message-color: #1e222a;
+  --message-color: #3c3836;
   --message-color-hover: hsl(
     var(--accent-hue),
     calc(
@@ -63,28 +63,28 @@
         var(--ui-darkness-modifier) * 4
     )
   ) !important;
-  --message-color-alt: #0b0e14;
-  --attachment-color: #0b0e14;
-  --main-textarea-color: #e6b450;
-  --main-textarea-button-color: #0b0e14;
-  --main-textarea-color-alt: #aad94c;
-  --main-textarea-border: #1e222a;
+  --message-color-alt: #282828;
+  --attachment-color: #282828;
+  --main-textarea-color: #b8bb26;
+  --main-textarea-button-color: #282828;
+  --main-textarea-color-alt: #fabd2f;
+  --main-textarea-border: #3c3836;
 
   /* Card */
-  --card-color-filled: #1e222a;
-  --card-color-hover: #a37a29;
-  --card-color-active: #a37a29;
-  --card-color-alt: #3a4a24;
-  --card-color-alt-hover: #aad94c;
-  --card-border-color: #1e222a;
-  --card-header-text-color: #d1d1c7;
+  --card-color-filled: #3c3836;
+  --card-color-hover: #9a9c30;
+  --card-color-active: #9a9c30;
+  --card-color-alt: #67542a;
+  --card-color-alt-hover: #fabd2f;
+  --card-border-color: #3c3836;
+  --card-header-text-color: #fbf1c7;
 
   /* Slider & Switch */
-  --switch-knob-color: #1e222a;
-  --switch-slider-color: #0b0e14;
+  --switch-knob-color: #3c3836;
+  --switch-slider-color: #282828;
 
   /* Input */
-  --input-text-color: #d1d1c7;
+  --input-text-color: #fbf1c7;
 
   /* Misc */
   --app-watermark-one: "Noctalia";
@@ -109,87 +109,87 @@
    theme. Map them to the palette and blend the syntax hues toward the surface
    text color so both light and dark palettes stay readable. */
 body {
-  --text-code: #d1d1c7 !important;
-  --text-code-variable: #d1d1c7 !important;
-  --text-code-operator: color-mix(in srgb, #8e959e 80%, #0b0e14) !important;
-  --text-code-comment: color-mix(in srgb, #8e959e 80%, #0b0e14) !important;
-  --text-code-keyword: color-mix(in srgb, #e6b450 75%, #d1d1c7) !important;
-  --text-code-section: color-mix(in srgb, #e6b450 75%, #d1d1c7) !important;
-  --text-code-link: color-mix(in srgb, #e6b450 75%, #d1d1c7) !important;
-  --text-code-bullet: color-mix(in srgb, #e6b450 75%, #d1d1c7) !important;
-  --text-code-title: color-mix(in srgb, #aad94c 75%, #d1d1c7) !important;
+  --text-code: #fbf1c7 !important;
+  --text-code-variable: #fbf1c7 !important;
+  --text-code-operator: color-mix(in srgb, #ebdbb2 80%, #282828) !important;
+  --text-code-comment: color-mix(in srgb, #ebdbb2 80%, #282828) !important;
+  --text-code-keyword: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-section: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-link: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-bullet: color-mix(in srgb, #b8bb26 75%, #fbf1c7) !important;
+  --text-code-title: color-mix(in srgb, #fabd2f 75%, #fbf1c7) !important;
   --text-code-type: color-mix(
     in srgb,
     hsl(267deg, 83%, 75%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-string: color-mix(
     in srgb,
     hsl(105deg, 48%, 67%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-regexp: color-mix(
     in srgb,
     hsl(105deg, 48%, 67%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-addition: color-mix(
     in srgb,
     hsl(105deg, 48%, 67%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-number: color-mix(
     in srgb,
     hsl(40deg, 70%, 73%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-builtin: color-mix(
     in srgb,
     hsl(40deg, 70%, 73%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-decorator: color-mix(
     in srgb,
     hsl(40deg, 70%, 73%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-attribute: color-mix(
     in srgb,
     hsl(199deg, 66%, 64%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-property: color-mix(
     in srgb,
     hsl(199deg, 66%, 64%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-namespace: color-mix(
     in srgb,
     hsl(199deg, 66%, 64%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-tag: color-mix(
     in srgb,
     hsl(351deg, 74%, 68%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-error: color-mix(
     in srgb,
     hsl(351deg, 74%, 68%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-deletion: color-mix(
     in srgb,
     hsl(351deg, 74%, 68%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
   --text-code-escape: color-mix(
     in srgb,
     hsl(267deg, 83%, 75%) 36%,
-    #d1d1c7
+    #fbf1c7
   ) !important;
 }
 
 [class*="codeBlockLang"] {
-  color: color-mix(in srgb, hsl(105deg, 48%, 67%) 36%, #d1d1c7) !important;
+  color: color-mix(in srgb, hsl(105deg, 48%, 67%) 36%, #fbf1c7) !important;
 }

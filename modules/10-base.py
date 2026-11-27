@@ -34,10 +34,10 @@ PACKAGES = [
   "bluez-utils",
   "gnome-keyring",
   "networkmanager",
+  "iwd",
   "sbctl",
   "sudo",
   "ufw",
-  "wpa_supplicant",
   # audio (pipewire)
   "gst-plugin-pipewire",
   "libpulse",
